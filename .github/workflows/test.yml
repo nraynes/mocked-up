@@ -2,7 +2,7 @@ name: CI/CD Test
 
 on:
   pull_request:
-    branches: [ "master" ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
