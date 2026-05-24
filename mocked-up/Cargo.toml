@@ -1,0 +1,21 @@
+[package]
+name = "mocked-up"
+version = "0.1.0"
+edition = "2024"
+authors = ["Nicholas Raynes"]
+description = "Framework for mocking anything and everything."
+license  = "MIT OR Apache-2.0"
+repository = "https://github.com/nraynes/mocked-up"
+keywords = ["mock", "framework", "rust", "project", "tools"]
+categories = ["development-tools"]
+include = [
+    "src/",
+    "examples/",
+    "Cargo.toml",
+    "../LICENSES/",
+    "../LICENSE",
+    "../README.md",
+    "../CHANGELOG.md",
+]
+
+[dependencies]
