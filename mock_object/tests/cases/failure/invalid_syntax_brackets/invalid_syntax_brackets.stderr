@@ -1,0 +1,21 @@
+error: custom attribute panicked
+ --> tests/cases/failure/invalid_syntax_brackets/invalid_syntax_brackets.rs:3:1
+  |
+3 | / #[mock_object(
+4 | |     mock_one = ("Test value for mock one.", 89),
+5 | | )]
+  | |__^
+  |
+  = help: message: There was a problem parsing list of mock templates: Error("expected square brackets")
+
+error[E0425]: cannot find type `TestObj` in this scope
+  --> tests/cases/failure/invalid_syntax_brackets/invalid_syntax_brackets.rs:11:6
+   |
+11 | impl TestObj {
+   |      ^^^^^^^ not found in this scope
+
+error[E0433]: cannot find type `TestObj` in this scope
+  --> tests/cases/failure/invalid_syntax_brackets/invalid_syntax_brackets.rs:21:29
+   |
+21 |     let test_obj_mock_one = TestObj::mock_one();
+   |                             ^^^^^^^ use of undeclared type `TestObj`

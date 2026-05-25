@@ -1,3 +1,3 @@
 [workspace]
 resolver = "3"
-members = ["mocked-up"]
+members = ["mock_object","mocked-up"]

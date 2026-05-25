@@ -1,0 +1,22 @@
+error[E0308]: mismatched types
+  --> tests/cases/failure/invalid_arg_types/invalid_arg_types.rs:4:17
+   |
+ 3 | / #[mock_object(
+ 4 | |     mock_one = [true, 89],
+   | |                 ^^^^ expected `&str`, found `bool`
+ 5 | | )]
+   | |__- arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> tests/cases/failure/invalid_arg_types/invalid_arg_types.rs:12:8
+   |
+12 |     fn new(value_one: &str, value_two: u32) -> Self {
+   |        ^^^ ---------------
+
+warning: unused variable: `test_obj_mock_one`
+  --> tests/cases/failure/invalid_arg_types/invalid_arg_types.rs:21:9
+   |
+21 |     let test_obj_mock_one = TestObj::mock_one();
+   |         ^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_test_obj_mock_one`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
