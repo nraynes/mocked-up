@@ -154,7 +154,7 @@ checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
 
 [[package]]
 name = "mock_object"
-version = "0.0.0"
+version = "0.2.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -164,7 +164,7 @@ dependencies = [
 
 [[package]]
 name = "mocked-up"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "derive-getters",
  "mock_object",
