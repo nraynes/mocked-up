@@ -76,11 +76,35 @@ impl TempDir {
         self
     }
 
+    fn refresh(&mut self) -> Result<(), MockError> {
+        for item in fs::read_dir(&self.path)? {
+            let item = item?;
+            let item_file_name = item.file_name();
+            let item_name = item_file_name
+                .to_str()
+                .ok_or("Could not convert OS string to string.")?;
+            if item.file_type()?.is_file() {
+                if !self.files.contains_key(item_name) {
+                    self.files
+                        .insert(item_name.to_string(), TempFile::new(&item.path())?);
+                }
+            } else if item.file_type()?.is_dir() {
+                if !self.dirs.contains_key(item_name) {
+                    self.dirs
+                        .insert(item_name.to_string(), Self::new(&item.path())?);
+                }
+            }
+        }
+        Ok(())
+    }
+
     pub fn dir(&mut self, name: &str) -> Option<&mut Self> {
+        self.refresh().ok();
         self.dirs.get_mut(name)
     }
 
     pub fn file(&mut self, name: &str) -> Option<&mut TempFile> {
+        self.refresh().ok();
         self.files.get_mut(name)
     }
 }
