@@ -1,4 +1,8 @@
-use std::{collections::HashMap, fs, path::PathBuf};
+use std::{
+    collections::HashMap,
+    fs,
+    path::{Path, PathBuf},
+};
 
 use derive_getters::Getters;
 
@@ -27,30 +31,27 @@ impl Drop for TempDir {
 }
 
 impl TempDir {
-    pub fn new(path: &PathBuf) -> Result<Self, MockError> {
+    pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, MockError> {
+        let path = path.as_ref();
         if !fs::exists(path)? {
             fs::create_dir_all(path)?;
         };
         Ok(Self {
-            path: path.clone(),
+            path: path.to_path_buf(),
             files: HashMap::new(),
             dirs: HashMap::new(),
         })
     }
 
     pub fn touch(&mut self, name: &str) -> Result<&mut Self, MockError> {
-        self.files.insert(
-            name.to_string(),
-            TempFile::new(&self.path.join(PathBuf::from(name)))?,
-        );
+        self.files
+            .insert(name.to_string(), TempFile::new(&self.path.join(name))?);
         Ok(self)
     }
 
     pub fn mkdir(&mut self, name: &str) -> Result<&mut Self, MockError> {
-        self.dirs.insert(
-            name.to_string(),
-            Self::new(&self.path.join(PathBuf::from(name)))?,
-        );
+        self.dirs
+            .insert(name.to_string(), Self::new(&self.path.join(name))?);
         Ok(self)
     }
 
@@ -59,7 +60,7 @@ impl TempDir {
         name: &str,
         mut f: F,
     ) -> Result<&mut Self, MockError> {
-        let mut new_file = TempFile::new(&self.path.join(PathBuf::from(name)))?;
+        let mut new_file = TempFile::new(&self.path.join(name))?;
         f(&mut new_file);
         self.files.insert(name.to_string(), new_file);
         Ok(self)
@@ -70,7 +71,7 @@ impl TempDir {
         name: &str,
         mut f: F,
     ) -> Result<&mut Self, MockError> {
-        let mut new_dir = Self::new(&self.path.join(PathBuf::from(name)))?;
+        let mut new_dir = Self::new(&self.path.join(name))?;
         f(&mut new_dir);
         self.dirs.insert(name.to_string(), new_dir);
         Ok(self)
@@ -78,7 +79,7 @@ impl TempDir {
 
     pub fn rm(&mut self, name: &str) -> &mut Self {
         if self.files.remove(name).is_none() {
-            match self.path.join(PathBuf::from(name)).to_str() {
+            match self.path.join(name).to_str() {
                 Some(file_path) => eprintln!("Could not remove file at {}, not found.", file_path),
                 None => eprintln!("Could not remove file, not found."),
             }
@@ -88,7 +89,7 @@ impl TempDir {
 
     pub fn rmdir(&mut self, name: &str) -> &mut Self {
         if self.dirs.remove(name).is_none() {
-            match self.path.join(PathBuf::from(name)).to_str() {
+            match self.path.join(name).to_str() {
                 Some(file_path) => {
                     eprintln!("Could not remove directory at {}, not found.", file_path)
                 }

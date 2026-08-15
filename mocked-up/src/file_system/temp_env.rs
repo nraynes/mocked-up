@@ -12,7 +12,7 @@ pub struct TempEnv {
 
 impl TempEnv {
     pub fn new() -> Result<Self, MockError> {
-        let temp_dir = std::env::temp_dir();
+        let temp_dir = std::env::temp_dir().canonicalize()?;
         let env_root = temp_dir.join(PathBuf::from(Self::generate_name()));
         let root = TempDir::new(&env_root)?;
         Ok(Self { root })

@@ -1,7 +1,7 @@
 use std::{
     fs::{self, File},
     io::{Read, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use derive_getters::Getters;
@@ -29,11 +29,14 @@ impl Drop for TempFile {
 }
 
 impl TempFile {
-    pub fn new(path: &PathBuf) -> Result<Self, MockError> {
+    pub fn new<P: AsRef<Path>>(path: P) -> Result<Self, MockError> {
+        let path = path.as_ref();
         if !fs::exists(path)? {
             File::create_new(path)?;
         };
-        Ok(Self { path: path.clone() })
+        Ok(Self {
+            path: path.to_path_buf(),
+        })
     }
 
     pub fn write(&mut self, content: &str) -> Result<&mut Self, MockError> {
