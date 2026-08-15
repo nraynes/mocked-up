@@ -8,7 +8,7 @@ use derive_getters::Getters;
 
 use crate::MockError;
 
-#[derive(Getters)]
+#[derive(Getters, Debug)]
 pub struct TempFile {
     path: PathBuf,
 }

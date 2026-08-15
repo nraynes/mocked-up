@@ -5,7 +5,7 @@ use rand::RngExt;
 
 use crate::{MockError, file_system::TempDir};
 
-#[derive(Getters)]
+#[derive(Getters, Debug)]
 pub struct TempEnv {
     root: TempDir,
 }

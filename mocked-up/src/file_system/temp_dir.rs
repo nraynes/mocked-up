@@ -8,7 +8,7 @@ use derive_getters::Getters;
 
 use crate::{MockError, file_system::TempFile};
 
-#[derive(Getters)]
+#[derive(Getters, Debug)]
 pub struct TempDir {
     path: PathBuf,
     files: HashMap<String, TempFile>,
