@@ -22,6 +22,14 @@ impl TempEnv {
         &mut self.root
     }
 
+    pub fn debug(&self) -> String {
+        format!("{:?}", self)
+    }
+
+    pub fn debug_mut(&mut self) -> String {
+        format!("{:?}", self)
+    }
+
     fn generate_name() -> String {
         let mut rng = rand::rng();
         let name_len: u32 = rng.random_range(8..=14);
