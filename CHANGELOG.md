@@ -1,6 +1,6 @@
-# Version: v0.3.0
+# Version: v0.3.1
 
-## Features
+## Patches
 
-- feat: added tests and builder methods for recursive building
+- fix: added canonicalization of root env path
 
