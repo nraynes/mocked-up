@@ -1,6 +1,6 @@
-# Version: v0.3.2
+# Version: v0.3.3
 
 ## Patches
 
-- fix: added debug trait to structs
+- fix: added mutable debugger
 
