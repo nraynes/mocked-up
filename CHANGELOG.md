@@ -1,8 +1,6 @@
-# Version: v0.2.1
+# Version: v0.3.0
 
-## Patches
+## Features
 
-- fix: fixed reading dir and file
-    
-    dir and file now read files and directories that may not have been added through the structs methods
+- feat: added tests and builder methods for recursive building
 
