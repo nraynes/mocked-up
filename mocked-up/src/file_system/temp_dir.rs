@@ -2,7 +2,7 @@ use std::{collections::HashMap, fs, path::PathBuf};
 
 use derive_getters::Getters;
 
-use crate::{MockError, TempFile};
+use crate::{MockError, file_system::TempFile};
 
 #[derive(Getters)]
 pub struct TempDir {
@@ -51,6 +51,28 @@ impl TempDir {
             name.to_string(),
             Self::new(&self.path.join(PathBuf::from(name)))?,
         );
+        Ok(self)
+    }
+
+    pub fn touch_and<F: FnMut(&mut TempFile)>(
+        &mut self,
+        name: &str,
+        mut f: F,
+    ) -> Result<&mut Self, MockError> {
+        let mut new_file = TempFile::new(&self.path.join(PathBuf::from(name)))?;
+        f(&mut new_file);
+        self.files.insert(name.to_string(), new_file);
+        Ok(self)
+    }
+
+    pub fn mkdir_and<F: FnMut(&mut Self)>(
+        &mut self,
+        name: &str,
+        mut f: F,
+    ) -> Result<&mut Self, MockError> {
+        let mut new_dir = Self::new(&self.path.join(PathBuf::from(name)))?;
+        f(&mut new_dir);
+        self.dirs.insert(name.to_string(), new_dir);
         Ok(self)
     }
 

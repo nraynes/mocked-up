@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod test {
-    use mocked_up::TempEnv;
+    use mocked_up::file_system::TempEnv;
 
     #[test]
     fn ops() {

@@ -2,7 +2,119 @@
 mod test {
     use std::fs;
 
-    use mocked_up::TempEnv;
+    use mocked_up::file_system::TempEnv;
+
+    #[test]
+    fn dir_builder() {
+        let mut temp = TempEnv::new().unwrap();
+        temp.env()
+            .mkdir_and("test_dir_one", |d| {
+                d.mkdir("inner_one_test_dir_one")
+                    .unwrap()
+                    .mkdir("inner_one_test_dir_two")
+                    .unwrap()
+                    .touch("inner_one_test_file_one")
+                    .unwrap();
+            })
+            .unwrap()
+            .mkdir_and("test_dir_two", |d| {
+                d.mkdir("inner_two_test_dir_one")
+                    .unwrap()
+                    .mkdir("inner_two_test_dir_two")
+                    .unwrap()
+                    .touch("inner_two_test_file_one")
+                    .unwrap();
+            })
+            .unwrap()
+            .touch("file_one")
+            .unwrap()
+            .touch_and("file_two", |f| {
+                f.write("Test content one two three.").unwrap();
+            })
+            .unwrap();
+
+        assert!(fs::exists(temp.env().path()).unwrap());
+
+        assert!(fs::exists(temp.env().dir("test_dir_one").unwrap().path()).unwrap());
+        assert!(
+            fs::exists(
+                temp.env()
+                    .dir("test_dir_one")
+                    .unwrap()
+                    .dir("inner_one_test_dir_one")
+                    .unwrap()
+                    .path()
+            )
+            .unwrap()
+        );
+        assert!(
+            fs::exists(
+                temp.env()
+                    .dir("test_dir_one")
+                    .unwrap()
+                    .dir("inner_one_test_dir_two")
+                    .unwrap()
+                    .path()
+            )
+            .unwrap()
+        );
+        assert!(
+            fs::exists(
+                temp.env()
+                    .dir("test_dir_one")
+                    .unwrap()
+                    .file("inner_one_test_file_one")
+                    .unwrap()
+                    .path()
+            )
+            .unwrap()
+        );
+
+        assert!(fs::exists(temp.env().dir("test_dir_two").unwrap().path()).unwrap());
+        assert!(
+            fs::exists(
+                temp.env()
+                    .dir("test_dir_two")
+                    .unwrap()
+                    .dir("inner_two_test_dir_one")
+                    .unwrap()
+                    .path()
+            )
+            .unwrap()
+        );
+        assert!(
+            fs::exists(
+                temp.env()
+                    .dir("test_dir_two")
+                    .unwrap()
+                    .dir("inner_two_test_dir_two")
+                    .unwrap()
+                    .path()
+            )
+            .unwrap()
+        );
+        assert!(
+            fs::exists(
+                temp.env()
+                    .dir("test_dir_two")
+                    .unwrap()
+                    .file("inner_two_test_file_one")
+                    .unwrap()
+                    .path()
+            )
+            .unwrap()
+        );
+
+        assert!(fs::exists(temp.env().file("file_one").unwrap().path()).unwrap());
+        assert!(fs::exists(temp.env().file("file_two").unwrap().path()).unwrap());
+
+        assert_eq!(
+            fs::read_to_string(temp.env().file("file_two").unwrap().path())
+                .unwrap()
+                .as_str(),
+            "Test content one two three."
+        );
+    }
 
     #[test]
     fn outside_dir_ops() {

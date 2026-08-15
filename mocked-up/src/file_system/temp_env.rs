@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use derive_getters::Getters;
 use rand::RngExt;
 
-use crate::{MockError, TempDir};
+use crate::{MockError, file_system::TempDir};
 
 #[derive(Getters)]
 pub struct TempEnv {
