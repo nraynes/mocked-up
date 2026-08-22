@@ -1,5 +1,6 @@
-pub mod file_system;
 mod mock_error;
+
+pub mod file_system;
 pub mod service;
 
 pub use mock_error::MockError;

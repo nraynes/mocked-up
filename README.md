@@ -1,3 +1,20 @@
+# Mocked-Up
+
+Mocked-Up is a set of tools used for mocking various things. One of the basic things you can do are autogenerate methods on structs that return mocked versions of that struct with dummy data you give at compile time. You can make a temporary environment in the file system that cleans itself up after the test, and is easy to work with. This should help make your tests a lot easier to write with a lot less boilerplate code. A full list of features, details, and limitations is described further below.
+
+## Future Improvements
+
+- Make mock_object macro work only for development builds by default, so that release builds don't include the extra boilerplate mock code.
+- Add custom configurable rest service emulator for mocking rest services.
+- Add custom configurable database emulator for mocking databases.
+- Make it so that features are optional, so that only the needed tools are installed.
+
+## Features
+
+## Usage
+
+### Examples
+
 ## License
 
 This work is dual-licensed under MIT and Apache 2.0.

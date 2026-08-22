@@ -17,7 +17,21 @@ pub struct TempDir {
 
 impl Drop for TempDir {
     fn drop(&mut self) {
-        if let Err(e) = fs::remove_dir_all(&self.path) {
+        let this_exists = fs::exists(&self.path);
+        let mut error = None;
+        match &this_exists {
+            Err(e) => {
+                error = Some(e.to_string());
+            }
+            Ok(b) => {
+                if *b {
+                    if let Err(e) = fs::remove_dir_all(&self.path) {
+                        error = Some(e.to_string());
+                    }
+                }
+            }
+        }
+        if let Some(e) = error {
             eprintln!(
                 "Could not delete directory at {}. Error: {}",
                 &self
