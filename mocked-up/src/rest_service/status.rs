@@ -1,5 +1,6 @@
 use crate::MockError;
 
+#[derive(PartialEq, Debug)]
 pub enum Status {
     // 100 - 199
     Continue,

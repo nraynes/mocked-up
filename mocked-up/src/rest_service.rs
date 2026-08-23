@@ -1,20 +1,26 @@
-mod call;
 mod request;
 mod response;
+mod rest_builder;
 mod route;
+mod route_builder;
 mod status;
 mod url;
+
+pub use response::Response;
+pub use rest_builder::RestBuilder;
+pub use route_builder::RouteBuilder;
+pub use status::Status;
 
 use derive_new::new;
 use std::collections::HashMap;
 
 use crate::{
     MockError,
-    service::{request::Request, response::Response, route::Route, url::Url},
+    rest_service::{request::Request, route::Route, url::Url},
 };
 
 #[derive(new)]
-pub struct Service<F: Fn(Request) -> Response> {
+pub struct RestService<F: Fn(Request) -> Response> {
     base_url: Url,
     get_routes: HashMap<String, Route<F>>,
     post_routes: HashMap<String, Route<F>>,
@@ -23,7 +29,7 @@ pub struct Service<F: Fn(Request) -> Response> {
     delete_routes: HashMap<String, Route<F>>,
 }
 
-impl<F: Fn(Request) -> Response> Service<F> {
+impl<F: Fn(Request) -> Response> RestService<F> {
     fn find_in<U: AsRef<str>, I: IntoIterator<Item = U>>(
         routes: &HashMap<String, Route<F>>,
         route: I,
@@ -44,7 +50,7 @@ impl<F: Fn(Request) -> Response> Service<F> {
         Ok(url)
     }
 
-    fn build_request<const N: usize, T: AsRef<[u8]>>(
+    fn build_request<const N: usize, T: AsRef<String>>(
         &self,
         url: &Url,
         headers: [(&str, &str); N],
@@ -55,12 +61,12 @@ impl<F: Fn(Request) -> Response> Service<F> {
             .map(|x| (x.0.to_string(), x.1.to_string()));
         Request::new(
             HashMap::from_iter(headers_map_iter),
-            Vec::from(body.as_ref()),
+            body.as_ref().clone(),
             url.query_params().clone(),
         )
     }
 
-    pub fn req<U: Into<Url>, const N: usize, T: AsRef<[u8]>>(
+    pub fn req<U: Into<Url>, const N: usize, T: AsRef<String>>(
         &self,
         url: U,
         headers: [(&str, &str); N],
@@ -74,7 +80,7 @@ impl<F: Fn(Request) -> Response> Service<F> {
         Ok(route.call(request))
     }
 
-    pub fn get<U: Into<Url>, const N: usize, T: AsRef<[u8]>>(
+    pub fn get<U: Into<Url>, const N: usize, T: AsRef<String>>(
         &self,
         url: U,
         headers: [(&str, &str); N],
@@ -83,7 +89,7 @@ impl<F: Fn(Request) -> Response> Service<F> {
         self.req(url, headers, body, &self.get_routes)
     }
 
-    pub fn post<U: Into<Url>, const N: usize, T: AsRef<[u8]>>(
+    pub fn post<U: Into<Url>, const N: usize, T: AsRef<String>>(
         &self,
         url: U,
         headers: [(&str, &str); N],
@@ -92,7 +98,7 @@ impl<F: Fn(Request) -> Response> Service<F> {
         self.req(url, headers, body, &self.post_routes)
     }
 
-    pub fn patch<U: Into<Url>, const N: usize, T: AsRef<[u8]>>(
+    pub fn patch<U: Into<Url>, const N: usize, T: AsRef<String>>(
         &self,
         url: U,
         headers: [(&str, &str); N],
@@ -101,7 +107,7 @@ impl<F: Fn(Request) -> Response> Service<F> {
         self.req(url, headers, body, &self.patch_routes)
     }
 
-    pub fn put<U: Into<Url>, const N: usize, T: AsRef<[u8]>>(
+    pub fn put<U: Into<Url>, const N: usize, T: AsRef<String>>(
         &self,
         url: U,
         headers: [(&str, &str); N],
@@ -110,7 +116,7 @@ impl<F: Fn(Request) -> Response> Service<F> {
         self.req(url, headers, body, &self.put_routes)
     }
 
-    pub fn delete<U: Into<Url>, const N: usize, T: AsRef<[u8]>>(
+    pub fn delete<U: Into<Url>, const N: usize, T: AsRef<String>>(
         &self,
         url: U,
         headers: [(&str, &str); N],

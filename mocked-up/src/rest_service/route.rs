@@ -2,12 +2,15 @@ use std::collections::HashMap;
 
 use derive_new::new;
 
-use crate::service::{call::Call, request::Request, response::Response};
+use crate::{
+    if_dev,
+    rest_service::{Status, request::Request, response::Response},
+};
 
-#[derive(new)]
+#[derive(new, PartialEq, Debug)]
 pub struct Route<F: Fn(Request) -> Response> {
     routes: HashMap<String, Self>,
-    caller: Call<F>,
+    f: Option<F>,
 }
 
 impl<F: Fn(Request) -> Response> Route<F> {
@@ -23,6 +26,15 @@ impl<F: Fn(Request) -> Response> Route<F> {
     }
 
     pub fn call(&self, request: Request) -> Response {
-        self.caller.call(request)
+        match &self.f {
+            Some(call_method) => (call_method)(request),
+            None => Response::new(String::new(), Status::NotImplemented),
+        }
+    }
+
+    if_dev! {
+        pub fn is_empty(&self) -> bool {
+            self.routes.is_empty()
+        }
     }
 }

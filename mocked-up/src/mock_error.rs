@@ -4,5 +4,8 @@ use rust_alert::alert;
 #[alert(errors = [
     std::io::Error,
     String,
+    std::string::FromUtf8Error,
+    serde_json::Error,
+    std::num::ParseIntError,
 ])]
 pub struct MockError {}
