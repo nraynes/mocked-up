@@ -10,6 +10,13 @@ pub struct Response {
 }
 
 impl Response {
+    pub fn no_data(status: Status) -> Self {
+        Self {
+            data: String::new(),
+            status: status,
+        }
+    }
+
     pub fn deserialize_data<'a, T, E, D: Fn(&'a str) -> Result<T, E>>(
         &'a self,
         de: D,

@@ -96,19 +96,3 @@ impl RestBuilder<fn(Request) -> Response> {
         )
     }
 }
-
-// #[cfg(test)]
-// mod test {
-//     use super::*;
-
-//     #[test]
-//     fn test_rest_builder() {
-//         let service = RestBuilder::new("http://www.example.com")
-//             .unwrap()
-//             .get("app", None, |b| b
-//                 .add("login", Some(|r| {
-
-//                 }), |b| b))
-
-//     }
-// }

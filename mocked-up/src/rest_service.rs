@@ -12,7 +12,7 @@ pub use route_builder::RouteBuilder;
 pub use status::Status;
 
 use derive_new::new;
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 use crate::{
     MockError,
@@ -42,15 +42,15 @@ impl<F: Fn(Request) -> Response> RestService<F> {
         })
     }
 
-    fn extract_url<U: Into<Url>>(&self, url: U) -> Result<Url, MockError> {
-        let url = url.into();
+    fn extract_url(&self, url: &str) -> Result<Url, MockError> {
+        let url = Url::from_str(url)?;
         if url.base() != self.base_url.base() {
             return Err(MockError::from("Url must match base url"));
         }
         Ok(url)
     }
 
-    fn build_request<const N: usize, T: AsRef<String>>(
+    fn build_request<const N: usize, T: AsRef<str>>(
         &self,
         url: &Url,
         headers: [(&str, &str); N],
@@ -61,14 +61,14 @@ impl<F: Fn(Request) -> Response> RestService<F> {
             .map(|x| (x.0.to_string(), x.1.to_string()));
         Request::new(
             HashMap::from_iter(headers_map_iter),
-            body.as_ref().clone(),
+            body.as_ref().to_string().clone(),
             url.query_params().clone(),
         )
     }
 
-    pub fn req<U: Into<Url>, const N: usize, T: AsRef<String>>(
+    pub fn req<const N: usize, T: AsRef<str>>(
         &self,
-        url: U,
+        url: &str,
         headers: [(&str, &str); N],
         body: T,
         from_routes: &HashMap<String, Route<F>>,
@@ -80,48 +80,131 @@ impl<F: Fn(Request) -> Response> RestService<F> {
         Ok(route.call(request))
     }
 
-    pub fn get<U: Into<Url>, const N: usize, T: AsRef<String>>(
+    pub fn get<const N: usize, T: AsRef<str>>(
         &self,
-        url: U,
+        url: &str,
         headers: [(&str, &str); N],
         body: T,
     ) -> Result<Response, MockError> {
         self.req(url, headers, body, &self.get_routes)
     }
 
-    pub fn post<U: Into<Url>, const N: usize, T: AsRef<String>>(
+    pub fn post<const N: usize, T: AsRef<str>>(
         &self,
-        url: U,
+        url: &str,
         headers: [(&str, &str); N],
         body: T,
     ) -> Result<Response, MockError> {
         self.req(url, headers, body, &self.post_routes)
     }
 
-    pub fn patch<U: Into<Url>, const N: usize, T: AsRef<String>>(
+    pub fn patch<const N: usize, T: AsRef<str>>(
         &self,
-        url: U,
+        url: &str,
         headers: [(&str, &str); N],
         body: T,
     ) -> Result<Response, MockError> {
         self.req(url, headers, body, &self.patch_routes)
     }
 
-    pub fn put<U: Into<Url>, const N: usize, T: AsRef<String>>(
+    pub fn put<const N: usize, T: AsRef<str>>(
         &self,
-        url: U,
+        url: &str,
         headers: [(&str, &str); N],
         body: T,
     ) -> Result<Response, MockError> {
         self.req(url, headers, body, &self.put_routes)
     }
 
-    pub fn delete<U: Into<Url>, const N: usize, T: AsRef<String>>(
+    pub fn delete<const N: usize, T: AsRef<str>>(
         &self,
-        url: U,
+        url: &str,
         headers: [(&str, &str); N],
         body: T,
     ) -> Result<Response, MockError> {
         self.req(url, headers, body, &self.delete_routes)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::rest_service::Status;
+
+    use super::*;
+
+    #[test]
+    fn test_rest_service_and_builder() {
+        let service = RestBuilder::new("http://www.example.com")
+            .unwrap()
+            .get("app", None, |b| {
+                b.add(
+                    "search",
+                    Some(|r| {
+                        if let Some(table) = r.query().get("table")
+                            && let Some(search_phrase) = r.query().get("search_phrase")
+                        {
+                            return Response::new(
+                                format!(
+                                    "The table selected was {} and the search phrase is {}.",
+                                    table, search_phrase
+                                ),
+                                Status::Ok,
+                            );
+                        }
+                        Response::no_data(Status::BadRequest)
+                    }),
+                    |b| b,
+                )
+                .build()
+            })
+            .post("app", None, |b| {
+                b.add(
+                    "data",
+                    Some(|r| {
+                        let data = r.body();
+                        Response::new(format!("The data given was {}", data), Status::Accepted)
+                    }),
+                    |b| b,
+                )
+                .build()
+            })
+            .build();
+
+        let get_response_valid = service
+            .get(
+                "http://www.example.com/app/search?table=users&search_phrase=some_search",
+                [],
+                "",
+            )
+            .unwrap();
+
+        assert_eq!(get_response_valid.status(), &Status::Ok);
+        assert_eq!(
+            get_response_valid.data(),
+            "The table selected was users and the search phrase is some_search."
+        );
+
+        let get_response_invalid = service
+            .get("http://www.example.com/app/search", [], "")
+            .unwrap();
+
+        assert_eq!(get_response_invalid.status(), &Status::BadRequest);
+        assert_eq!(get_response_invalid.data(), "");
+
+        let post_response_valid = service
+            .post("http://www.example.com/app/data", [], "Some Data")
+            .unwrap();
+
+        assert_eq!(post_response_valid.status(), &Status::Accepted);
+        assert_eq!(post_response_valid.data(), "The data given was Some Data");
+
+        let post_response_invalid = service.post("http://www.example.com/app/", [], "").unwrap();
+
+        assert_eq!(post_response_invalid.status(), &Status::NotImplemented);
+        assert_eq!(post_response_invalid.data(), "");
+
+        let put_response_invalid = service.put("http://www.example.com/app/", [], "");
+
+        assert!(put_response_invalid.is_err());
     }
 }
