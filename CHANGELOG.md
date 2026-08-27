@@ -1,8 +1,6 @@
-# Version: v0.6.0
+# Version: v0.6.1
 
-## Features
+## Patches
 
-- feat: added a rest service builder and tests for many functions
-- feat: added customizable rest service emulator
-- feat: added simple mock database
+- fix: exported essential functions
 
