@@ -5,18 +5,16 @@ mod route;
 mod status;
 mod url;
 
+pub use request::Request;
 pub use response::Response;
 pub use rest_builder::RestBuilder;
+pub use route::{Route, RouteBuilder};
 pub use status::Status;
 
 use derive_new::new;
 use std::{collections::HashMap, str::FromStr};
 
-use crate::{
-    MockError,
-    database::Database,
-    rest_service::{request::Request, route::Route, url::Url},
-};
+use crate::{MockError, database::Database, rest_service::url::Url};
 
 #[derive(new)]
 pub struct RestService<F: Fn(Request, &Database) -> Response> {
