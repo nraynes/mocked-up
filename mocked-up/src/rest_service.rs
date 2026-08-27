@@ -2,13 +2,11 @@ mod request;
 mod response;
 mod rest_builder;
 mod route;
-mod route_builder;
 mod status;
 mod url;
 
 pub use response::Response;
 pub use rest_builder::RestBuilder;
-pub use route_builder::RouteBuilder;
 pub use status::Status;
 
 use derive_new::new;
@@ -16,11 +14,12 @@ use std::{collections::HashMap, str::FromStr};
 
 use crate::{
     MockError,
+    database::Database,
     rest_service::{request::Request, route::Route, url::Url},
 };
 
 #[derive(new)]
-pub struct RestService<F: Fn(Request) -> Response> {
+pub struct RestService<F: Fn(Request, &Database) -> Response> {
     base_url: Url,
     get_routes: HashMap<String, Route<F>>,
     post_routes: HashMap<String, Route<F>>,
@@ -29,7 +28,7 @@ pub struct RestService<F: Fn(Request) -> Response> {
     delete_routes: HashMap<String, Route<F>>,
 }
 
-impl<F: Fn(Request) -> Response> RestService<F> {
+impl<F: Fn(Request, &Database) -> Response> RestService<F> {
     fn find_in<U: AsRef<str>, I: IntoIterator<Item = U>>(
         routes: &HashMap<String, Route<F>>,
         route: I,
@@ -139,7 +138,7 @@ mod test {
             .get("app", None, |b| {
                 b.add(
                     "search",
-                    Some(|r| {
+                    Some(|r, _| {
                         if let Some(table) = r.query().get("table")
                             && let Some(search_phrase) = r.query().get("search_phrase")
                         {
@@ -160,7 +159,7 @@ mod test {
             .post("app", None, |b| {
                 b.add(
                     "data",
-                    Some(|r| {
+                    Some(|r, _| {
                         let data = r.body();
                         Response::new(format!("The data given was {}", data), Status::Accepted)
                     }),

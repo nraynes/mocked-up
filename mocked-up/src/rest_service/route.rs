@@ -1,19 +1,25 @@
-use std::collections::HashMap;
+mod route_builder;
+
+pub use route_builder::RouteBuilder;
+
+use std::{collections::HashMap, rc::Rc};
 
 use derive_new::new;
 
 use crate::{
+    database::Database,
     if_dev,
     rest_service::{Status, request::Request, response::Response},
 };
 
 #[derive(new, PartialEq, Debug)]
-pub struct Route<F: Fn(Request) -> Response> {
+pub struct Route<F: Fn(Request, &Database) -> Response> {
+    db: Rc<Database>,
     routes: HashMap<String, Self>,
     f: Option<F>,
 }
 
-impl<F: Fn(Request) -> Response> Route<F> {
+impl<F: Fn(Request, &Database) -> Response> Route<F> {
     pub fn find<U: AsRef<str>, I: IntoIterator<Item = U>>(&self, route: I) -> Option<&Self> {
         let mut route_iter = route.into_iter();
         match route_iter.next() {
@@ -27,7 +33,7 @@ impl<F: Fn(Request) -> Response> Route<F> {
 
     pub fn call(&self, request: Request) -> Response {
         match &self.f {
-            Some(call_method) => (call_method)(request),
+            Some(call_method) => (call_method)(request, &self.db),
             None => Response::new(String::new(), Status::NotImplemented),
         }
     }

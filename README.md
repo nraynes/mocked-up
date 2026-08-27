@@ -4,9 +4,7 @@ Mocked-Up is a set of tools used for mocking various things. One of the basic th
 
 ## Future Improvements
 
-- Make mock_object macro work only for development builds by default, so that release builds don't include the extra boilerplate mock code.
-- Add custom configurable rest service emulator for mocking rest services.
-- Add custom configurable database emulator for mocking databases.
+- Add an idiomatic way to enforce constraints on request parameters, like standardized deserialized request structures.
 - Make it so that features are optional, so that only the needed tools are installed.
 
 ## Features

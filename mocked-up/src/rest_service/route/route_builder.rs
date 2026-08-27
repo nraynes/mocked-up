@@ -1,35 +1,46 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
-use crate::rest_service::{Response, request::Request, route::Route};
+use crate::{
+    database::Database,
+    rest_service::{Response, request::Request, route::Route},
+};
 
-pub struct RouteBuilder<F: Fn(Request) -> Response = fn(Request) -> Response> {
+pub struct RouteBuilder<F: Fn(Request, &Database) -> Response = fn(Request, &Database) -> Response>
+{
+    db: Rc<Database>,
     routes: HashMap<String, Self>,
     f: Option<F>,
 }
 
-impl RouteBuilder<fn(Request) -> Response> {
-    pub fn new(f: Option<fn(Request) -> Response>) -> Self {
+impl RouteBuilder<fn(Request, &Database) -> Response> {
+    pub fn new(db: Rc<Database>, f: Option<fn(Request, &Database) -> Response>) -> Self {
         Self {
+            db,
             routes: HashMap::new(),
-            f: f,
+            f,
         }
     }
 
     pub fn add<
-        G: Fn(RouteBuilder<fn(Request) -> Response>) -> RouteBuilder<fn(Request) -> Response>,
+        G: Fn(
+            RouteBuilder<fn(Request, &Database) -> Response>,
+        ) -> RouteBuilder<fn(Request, &Database) -> Response>,
     >(
         mut self,
         route: &str,
-        call_method: Option<fn(Request) -> Response>,
+        call_method: Option<fn(Request, &Database) -> Response>,
         inner: G,
     ) -> Self {
-        self.routes
-            .insert(route.to_string(), inner(RouteBuilder::new(call_method)));
+        self.routes.insert(
+            route.to_string(),
+            inner(RouteBuilder::new(Rc::clone(&self.db), call_method)),
+        );
         self
     }
 
-    pub fn build(self) -> Route<fn(Request) -> Response> {
+    pub fn build(self) -> Route<fn(Request, &Database) -> Response> {
         Route::new(
+            self.db,
             self.routes
                 .into_iter()
                 .map(|(k, v)| (k, v.build()))
@@ -52,17 +63,18 @@ mod test {
     /// and the builder itself.
     #[test]
     fn test_build_route() {
-        let route = RouteBuilder::new(None)
+        let db = Database::new();
+        let route = RouteBuilder::new(Rc::new(db), None)
             .add("one", None, |b| {
                 b.add(
                     "one_one",
-                    Some(|_| Response::new(String::new(), Status::BadRequest)),
+                    Some(|_, _| Response::new(String::new(), Status::BadRequest)),
                     |b| b,
                 )
                 .add("one_two", None, |b| {
                     b.add(
                         "one_two_one",
-                        Some(|r| {
+                        Some(|r, _| {
                             if let Ok(body) = r
                                 .deserialize_body(|s| serde_json::from_str::<Map<String, Value>>(s))
                                 && let Some(test_value) = body.get("test_key")
@@ -83,12 +95,12 @@ mod test {
             })
             .add(
                 "two",
-                Some(|_| Response::new(String::new(), Status::InternalServerError)),
+                Some(|_, _| Response::new(String::new(), Status::InternalServerError)),
                 |b| b,
             )
             .add(
                 "three",
-                Some(|_| Response::new(String::new(), Status::NotFound)),
+                Some(|_, _| Response::new(String::new(), Status::NotFound)),
                 |b| b,
             )
             .build();

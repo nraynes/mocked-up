@@ -1,6 +1,7 @@
 mod if_dev;
 mod mock_error;
 
+pub mod database;
 pub mod file_system;
 pub mod rest_service;
 
