@@ -1,6 +1,6 @@
-# Version: v0.6.3
+# Version: v0.6.4
 
 ## Patches
 
-- fix: made it so db is mutable in mutable calls
+- fix: fixed export
 
