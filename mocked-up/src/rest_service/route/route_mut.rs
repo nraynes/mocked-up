@@ -1,13 +1,5 @@
-mod route_builder;
-mod route_builder_mut;
-mod route_mut;
-
-pub use route_builder::RouteBuilder;
-pub use route_builder_mut::RouteBuilderMut;
-pub use route_mut::RouteMut;
-
 use std::{
-    cell::{Ref, RefCell},
+    cell::{RefCell, RefMut},
     collections::HashMap,
     rc::Rc,
 };
@@ -21,30 +13,34 @@ use crate::{
 };
 
 #[derive(new, PartialEq, Debug)]
-pub struct Route<F: Fn(Request, Ref<Database>) -> Response = fn(Request, Ref<Database>) -> Response>
-{
+pub struct RouteMut<
+    F: Fn(Request, RefMut<Database>) -> Response = fn(Request, RefMut<Database>) -> Response,
+> {
     db: Rc<RefCell<Database>>,
     routes: HashMap<String, Self>,
     f: Option<F>,
 }
 
-impl Route {
-    pub fn find<U: AsRef<str>, I: IntoIterator<Item = U>>(&self, route: I) -> Option<&Self> {
+impl RouteMut {
+    pub fn find_mut<U: AsRef<str>, I: IntoIterator<Item = U>>(
+        &mut self,
+        route: I,
+    ) -> Option<&mut Self> {
         let mut route_iter = route.into_iter();
         match route_iter.next() {
             Some(next_route) => self
                 .routes
-                .get(next_route.as_ref())
-                .and_then(|x| x.find(route_iter)),
+                .get_mut(next_route.as_ref())
+                .and_then(|x| x.find_mut(route_iter)),
             None => Some(self),
         }
     }
 
-    pub fn call(&self, request: Request) -> Response {
+    pub fn call(&mut self, request: Request) -> Response {
         match &self.f {
             Some(call_method) => (call_method)(
                 request,
-                match self.db.try_borrow() {
+                match self.db.try_borrow_mut() {
                     Ok(db) => db,
                     Err(e) => return Response::new(e.to_string(), Status::InternalServerError),
                 },

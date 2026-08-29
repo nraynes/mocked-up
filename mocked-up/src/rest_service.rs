@@ -12,30 +12,53 @@ pub use route::{Route, RouteBuilder};
 pub use status::Status;
 
 use derive_new::new;
-use std::{collections::HashMap, str::FromStr};
+use std::{
+    cell::{Ref, RefMut},
+    collections::HashMap,
+    str::FromStr,
+};
 
-use crate::{MockError, database::Database, rest_service::url::Url};
+use crate::{
+    MockError,
+    database::Database,
+    rest_service::{route::RouteMut, url::Url},
+};
 
 #[derive(new)]
-pub struct RestService<F: Fn(Request, &Database) -> Response> {
+pub struct RestService<
+    F: Fn(Request, Ref<Database>) -> Response = fn(Request, Ref<Database>) -> Response,
+    M: Fn(Request, RefMut<Database>) -> Response = fn(Request, RefMut<Database>) -> Response,
+> {
     base_url: Url,
     get_routes: HashMap<String, Route<F>>,
-    post_routes: HashMap<String, Route<F>>,
-    patch_routes: HashMap<String, Route<F>>,
-    put_routes: HashMap<String, Route<F>>,
-    delete_routes: HashMap<String, Route<F>>,
+    post_routes: HashMap<String, RouteMut<M>>,
+    patch_routes: HashMap<String, RouteMut<M>>,
+    put_routes: HashMap<String, RouteMut<M>>,
+    delete_routes: HashMap<String, RouteMut<M>>,
 }
 
-impl<F: Fn(Request, &Database) -> Response> RestService<F> {
+impl RestService {
     fn find_in<U: AsRef<str>, I: IntoIterator<Item = U>>(
-        routes: &HashMap<String, Route<F>>,
+        routes: &HashMap<String, Route>,
         route: I,
-    ) -> Option<&Route<F>> {
+    ) -> Option<&Route> {
         let mut route_iter = route.into_iter();
         route_iter.next().and_then(|next_route| {
             routes
                 .get(next_route.as_ref())
                 .and_then(|x| x.find(route_iter))
+        })
+    }
+
+    fn find_in_mut<U: AsRef<str>, I: IntoIterator<Item = U>>(
+        routes: &mut HashMap<String, RouteMut>,
+        route: I,
+    ) -> Option<&mut RouteMut> {
+        let mut route_iter = route.into_iter();
+        route_iter.next().and_then(|next_route| {
+            routes
+                .get_mut(next_route.as_ref())
+                .and_then(|x| x.find_mut(route_iter))
         })
     }
 
@@ -63,63 +86,69 @@ impl<F: Fn(Request, &Database) -> Response> RestService<F> {
         )
     }
 
-    pub fn req<const N: usize, T: AsRef<str>>(
-        &self,
-        url: &str,
-        headers: [(&str, &str); N],
-        body: T,
-        from_routes: &HashMap<String, Route<F>>,
-    ) -> Result<Response, MockError> {
-        let url = self.extract_url(url)?;
-        let request = self.build_request(&url, headers, body);
-        let route = Self::find_in(from_routes, url.route_segments())
-            .ok_or("No get method implemented for that route.")?;
-        Ok(route.call(request))
-    }
-
     pub fn get<const N: usize, T: AsRef<str>>(
         &self,
         url: &str,
         headers: [(&str, &str); N],
         body: T,
     ) -> Result<Response, MockError> {
-        self.req(url, headers, body, &self.get_routes)
+        let url = self.extract_url(url)?;
+        let request = self.build_request(&url, headers, body);
+        let route = Self::find_in(&self.get_routes, url.route_segments())
+            .ok_or("No method implemented for that route.")?;
+        Ok(route.call(request))
     }
 
     pub fn post<const N: usize, T: AsRef<str>>(
-        &self,
+        &mut self,
         url: &str,
         headers: [(&str, &str); N],
         body: T,
     ) -> Result<Response, MockError> {
-        self.req(url, headers, body, &self.post_routes)
+        let url = self.extract_url(url)?;
+        let request = self.build_request(&url, headers, body);
+        let route = Self::find_in_mut(&mut self.post_routes, url.route_segments())
+            .ok_or("No method implemented for that route.")?;
+        Ok(route.call(request))
     }
 
     pub fn patch<const N: usize, T: AsRef<str>>(
-        &self,
+        &mut self,
         url: &str,
         headers: [(&str, &str); N],
         body: T,
     ) -> Result<Response, MockError> {
-        self.req(url, headers, body, &self.patch_routes)
+        let url = self.extract_url(url)?;
+        let request = self.build_request(&url, headers, body);
+        let route = Self::find_in_mut(&mut self.patch_routes, url.route_segments())
+            .ok_or("No method implemented for that route.")?;
+        Ok(route.call(request))
     }
 
     pub fn put<const N: usize, T: AsRef<str>>(
-        &self,
+        &mut self,
         url: &str,
         headers: [(&str, &str); N],
         body: T,
     ) -> Result<Response, MockError> {
-        self.req(url, headers, body, &self.put_routes)
+        let url = self.extract_url(url)?;
+        let request = self.build_request(&url, headers, body);
+        let route = Self::find_in_mut(&mut self.put_routes, url.route_segments())
+            .ok_or("No method implemented for that route.")?;
+        Ok(route.call(request))
     }
 
     pub fn delete<const N: usize, T: AsRef<str>>(
-        &self,
+        &mut self,
         url: &str,
         headers: [(&str, &str); N],
         body: T,
     ) -> Result<Response, MockError> {
-        self.req(url, headers, body, &self.delete_routes)
+        let url = self.extract_url(url)?;
+        let request = self.build_request(&url, headers, body);
+        let route = Self::find_in_mut(&mut self.delete_routes, url.route_segments())
+            .ok_or("No method implemented for that route.")?;
+        Ok(route.call(request))
     }
 }
 
@@ -132,7 +161,7 @@ mod test {
     #[test]
     fn test_rest_service_and_builder() {
         let db = Database::new();
-        let service = RestBuilder::new("http://www.example.com", db)
+        let mut service = RestBuilder::new("http://www.example.com", db)
             .unwrap()
             .get("app", None, |b| {
                 b.add(

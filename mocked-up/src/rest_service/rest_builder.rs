@@ -1,25 +1,36 @@
-use std::{collections::HashMap, rc::Rc, str::FromStr};
+use std::{
+    cell::{Ref, RefCell, RefMut},
+    collections::HashMap,
+    rc::Rc,
+    str::FromStr,
+};
 
 use crate::{
     MockError,
     database::Database,
     rest_service::{
-        RestService, request::Request, response::Response, route::Route, route::RouteBuilder,
+        RestService, Status,
+        request::Request,
+        response::Response,
+        route::{Route, RouteBuilder, RouteBuilderMut, RouteMut},
         url::Url,
     },
 };
 
-pub struct RestBuilder<F: Fn(Request, &Database) -> Response = fn(Request, &Database) -> Response> {
+pub struct RestBuilder<
+    F: Fn(Request, Ref<Database>) -> Response = fn(Request, Ref<Database>) -> Response,
+    M: Fn(Request, RefMut<Database>) -> Response = fn(Request, RefMut<Database>) -> Response,
+> {
     base_url: Url,
     get_routes: HashMap<String, Route<F>>,
-    post_routes: HashMap<String, Route<F>>,
-    patch_routes: HashMap<String, Route<F>>,
-    put_routes: HashMap<String, Route<F>>,
-    delete_routes: HashMap<String, Route<F>>,
-    database: Rc<Database>,
+    post_routes: HashMap<String, RouteMut<M>>,
+    patch_routes: HashMap<String, RouteMut<M>>,
+    put_routes: HashMap<String, RouteMut<M>>,
+    delete_routes: HashMap<String, RouteMut<M>>,
+    database: Rc<RefCell<Database>>,
 }
 
-impl RestBuilder<fn(Request, &Database) -> Response> {
+impl RestBuilder {
     pub fn new(base_url: &str, database: Database) -> Result<Self, MockError> {
         Ok(Self {
             base_url: Url::from_str(base_url)?,
@@ -28,18 +39,18 @@ impl RestBuilder<fn(Request, &Database) -> Response> {
             patch_routes: HashMap::new(),
             put_routes: HashMap::new(),
             delete_routes: HashMap::new(),
-            database: Rc::new(database),
+            database: Rc::new(RefCell::new(database)),
         })
     }
 
     pub fn get<
         G: Fn(
-            RouteBuilder<fn(Request, &Database) -> Response>,
-        ) -> Route<fn(Request, &Database) -> Response>,
+            RouteBuilder<fn(Request, Ref<Database>) -> Response>,
+        ) -> Route<fn(Request, Ref<Database>) -> Response>,
     >(
         mut self,
         route: &str,
-        call_method: Option<fn(Request, &Database) -> Response>,
+        call_method: Option<fn(Request, Ref<Database>) -> Response>,
         inner: G,
     ) -> Self {
         self.get_routes.insert(
@@ -51,73 +62,73 @@ impl RestBuilder<fn(Request, &Database) -> Response> {
 
     pub fn post<
         G: Fn(
-            RouteBuilder<fn(Request, &Database) -> Response>,
-        ) -> Route<fn(Request, &Database) -> Response>,
+            RouteBuilderMut<fn(Request, RefMut<Database>) -> Response>,
+        ) -> RouteMut<fn(Request, RefMut<Database>) -> Response>,
     >(
         mut self,
         route: &str,
-        call_method: Option<fn(Request, &Database) -> Response>,
+        call_method: Option<fn(Request, RefMut<Database>) -> Response>,
         inner: G,
     ) -> Self {
         self.post_routes.insert(
             route.to_string(),
-            inner(RouteBuilder::new(Rc::clone(&self.database), call_method)),
+            inner(RouteBuilderMut::new(Rc::clone(&self.database), call_method)),
         );
         self
     }
 
     pub fn patch<
         G: Fn(
-            RouteBuilder<fn(Request, &Database) -> Response>,
-        ) -> Route<fn(Request, &Database) -> Response>,
+            RouteBuilderMut<fn(Request, RefMut<Database>) -> Response>,
+        ) -> RouteMut<fn(Request, RefMut<Database>) -> Response>,
     >(
         mut self,
         route: &str,
-        call_method: Option<fn(Request, &Database) -> Response>,
+        call_method: Option<fn(Request, RefMut<Database>) -> Response>,
         inner: G,
     ) -> Self {
         self.patch_routes.insert(
             route.to_string(),
-            inner(RouteBuilder::new(Rc::clone(&self.database), call_method)),
+            inner(RouteBuilderMut::new(Rc::clone(&self.database), call_method)),
         );
         self
     }
 
     pub fn put<
         G: Fn(
-            RouteBuilder<fn(Request, &Database) -> Response>,
-        ) -> Route<fn(Request, &Database) -> Response>,
+            RouteBuilderMut<fn(Request, RefMut<Database>) -> Response>,
+        ) -> RouteMut<fn(Request, RefMut<Database>) -> Response>,
     >(
         mut self,
         route: &str,
-        call_method: Option<fn(Request, &Database) -> Response>,
+        call_method: Option<fn(Request, RefMut<Database>) -> Response>,
         inner: G,
     ) -> Self {
         self.put_routes.insert(
             route.to_string(),
-            inner(RouteBuilder::new(Rc::clone(&self.database), call_method)),
+            inner(RouteBuilderMut::new(Rc::clone(&self.database), call_method)),
         );
         self
     }
 
     pub fn delete<
         G: Fn(
-            RouteBuilder<fn(Request, &Database) -> Response>,
-        ) -> Route<fn(Request, &Database) -> Response>,
+            RouteBuilderMut<fn(Request, RefMut<Database>) -> Response>,
+        ) -> RouteMut<fn(Request, RefMut<Database>) -> Response>,
     >(
         mut self,
         route: &str,
-        call_method: Option<fn(Request, &Database) -> Response>,
+        call_method: Option<fn(Request, RefMut<Database>) -> Response>,
         inner: G,
     ) -> Self {
         self.delete_routes.insert(
             route.to_string(),
-            inner(RouteBuilder::new(Rc::clone(&self.database), call_method)),
+            inner(RouteBuilderMut::new(Rc::clone(&self.database), call_method)),
         );
         self
     }
 
-    pub fn build(self) -> RestService<fn(Request, &Database) -> Response> {
+    pub fn build(self) -> RestService {
         RestService::new(
             self.base_url,
             self.get_routes,

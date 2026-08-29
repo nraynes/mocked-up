@@ -1,19 +1,27 @@
-use std::{collections::HashMap, rc::Rc};
+use std::{
+    cell::{Ref, RefCell},
+    collections::HashMap,
+    rc::Rc,
+};
 
 use crate::{
     database::Database,
     rest_service::{Response, request::Request, route::Route},
 };
 
-pub struct RouteBuilder<F: Fn(Request, &Database) -> Response = fn(Request, &Database) -> Response>
-{
-    db: Rc<Database>,
+pub struct RouteBuilder<
+    F: Fn(Request, Ref<Database>) -> Response = fn(Request, Ref<Database>) -> Response,
+> {
+    db: Rc<RefCell<Database>>,
     routes: HashMap<String, Self>,
     f: Option<F>,
 }
 
-impl RouteBuilder<fn(Request, &Database) -> Response> {
-    pub fn new(db: Rc<Database>, f: Option<fn(Request, &Database) -> Response>) -> Self {
+impl RouteBuilder<fn(Request, Ref<Database>) -> Response> {
+    pub fn new(
+        db: Rc<RefCell<Database>>,
+        f: Option<fn(Request, Ref<Database>) -> Response>,
+    ) -> Self {
         Self {
             db,
             routes: HashMap::new(),
@@ -23,22 +31,22 @@ impl RouteBuilder<fn(Request, &Database) -> Response> {
 
     pub fn add<
         G: Fn(
-            RouteBuilder<fn(Request, &Database) -> Response>,
-        ) -> RouteBuilder<fn(Request, &Database) -> Response>,
+            RouteBuilder<fn(Request, Ref<Database>) -> Response>,
+        ) -> RouteBuilder<fn(Request, Ref<Database>) -> Response>,
     >(
         mut self,
         route: &str,
-        call_method: Option<fn(Request, &Database) -> Response>,
+        call_method: Option<fn(Request, Ref<Database>) -> Response>,
         inner: G,
     ) -> Self {
         self.routes.insert(
             route.to_string(),
-            inner(RouteBuilder::new(Rc::clone(&self.db), call_method)),
+            inner(Self::new(Rc::clone(&self.db), call_method)),
         );
         self
     }
 
-    pub fn build(self) -> Route<fn(Request, &Database) -> Response> {
+    pub fn build(self) -> Route<fn(Request, Ref<Database>) -> Response> {
         Route::new(
             self.db,
             self.routes
@@ -64,7 +72,7 @@ mod test {
     #[test]
     fn test_build_route() {
         let db = Database::new();
-        let route = RouteBuilder::new(Rc::new(db), None)
+        let route = RouteBuilder::new(Rc::new(RefCell::new(db)), None)
             .add("one", None, |b| {
                 b.add(
                     "one_one",
