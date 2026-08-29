@@ -9,7 +9,7 @@ use crate::{
     MockError,
     database::Database,
     rest_service::{
-        RestService, Status,
+        RestService,
         request::Request,
         response::Response,
         route::{Route, RouteBuilder, RouteBuilderMut, RouteMut},
