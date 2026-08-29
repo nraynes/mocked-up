@@ -1,6 +1,6 @@
-# Version: v0.6.2
+# Version: v0.6.3
 
 ## Patches
 
-- fix: made it so database could be given
+- fix: made it so db is mutable in mutable calls
 
