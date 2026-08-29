@@ -1,6 +1,6 @@
-# Version: v0.6.4
+# Version: v0.6.5
 
 ## Patches
 
-- fix: fixed export
+- fix: added mutability to database tables
 
