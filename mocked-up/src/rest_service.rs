@@ -8,7 +8,7 @@ mod url;
 pub use request::Request;
 pub use response::Response;
 pub use rest_builder::RestBuilder;
-pub use route::{Route, RouteBuilder};
+pub use route::{Route, RouteBuilder, RouteBuilderMut, RouteMut};
 pub use status::Status;
 
 use derive_new::new;
@@ -18,11 +18,7 @@ use std::{
     str::FromStr,
 };
 
-use crate::{
-    MockError,
-    database::Database,
-    rest_service::{route::RouteMut, url::Url},
-};
+use crate::{MockError, database::Database, rest_service::url::Url};
 
 #[derive(new)]
 pub struct RestService<
