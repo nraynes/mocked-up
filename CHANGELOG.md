@@ -1,6 +1,6 @@
-# Version: v0.6.1
+# Version: v0.6.2
 
 ## Patches
 
-- fix: exported essential functions
+- fix: made it so database could be given
 
