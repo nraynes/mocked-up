@@ -1,11 +1,15 @@
+mod cell;
+mod column;
+mod key;
+mod map;
+mod row;
 mod table;
 
 use std::collections::HashMap;
 
-use derive_getters::Getters;
 use table::Table;
 
-#[derive(Getters, PartialEq, Debug)]
+#[derive(PartialEq, Debug)]
 pub struct Database {
     tables: HashMap<String, Table>,
 }
@@ -17,8 +21,16 @@ impl Database {
         }
     }
 
-    pub fn add_table(mut self, name: &str) -> Self {
-        self.tables.insert(name.to_string(), Table::new());
+    pub fn table(&self, name: &str) -> Option<&Table> {
+        self.tables.get(&name.to_string())
+    }
+
+    pub fn table_mut(&mut self, name: &str) -> Option<&mut Table> {
+        self.tables.get_mut(&name.to_string())
+    }
+
+    pub fn add_table(mut self, name: &str, table: Table) -> Self {
+        self.tables.insert(name.to_string(), table);
         self
     }
 }

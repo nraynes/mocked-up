@@ -20,7 +20,7 @@ pub struct RestBuilder<F: Fn(Request, &Database) -> Response = fn(Request, &Data
 }
 
 impl RestBuilder<fn(Request, &Database) -> Response> {
-    pub fn new(base_url: &str) -> Result<Self, MockError> {
+    pub fn new(base_url: &str, database: Database) -> Result<Self, MockError> {
         Ok(Self {
             base_url: Url::from_str(base_url)?,
             get_routes: HashMap::new(),
@@ -28,7 +28,7 @@ impl RestBuilder<fn(Request, &Database) -> Response> {
             patch_routes: HashMap::new(),
             put_routes: HashMap::new(),
             delete_routes: HashMap::new(),
-            database: Rc::new(Database::new()),
+            database: Rc::new(database),
         })
     }
 
