@@ -131,7 +131,8 @@ mod test {
 
     #[test]
     fn test_rest_service_and_builder() {
-        let service = RestBuilder::new("http://www.example.com")
+        let db = Database::new();
+        let service = RestBuilder::new("http://www.example.com", db)
             .unwrap()
             .get("app", None, |b| {
                 b.add(
